@@ -25,3 +25,13 @@ Thumbs.db
 
 # 测试产物
 backend/tests/_fixtures/out/
+
+# ── 私人文档与教务材料（仅本地保留，不提交 GitHub）──
+202330124036_*.docx
+AI漫剧制作平台实训报告.*
+AI漫剧全流程制作平台项目-报告说明.pdf
+PRD/
+pages/
+charts/
+assets/
+backend/app/schemas/__init__2.py
