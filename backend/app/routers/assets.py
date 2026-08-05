@@ -15,7 +15,7 @@ from app.schemas import AssetOut
 router = APIRouter(prefix="/assets", tags=["素材管理"])
 
 
-@router.get("/", response_model=List[AssetOut])
+@router.get("", response_model=List[AssetOut])
 def list_assets(
     project_id: Optional[int] = Query(None),
     file_type: Optional[str] = Query(None),

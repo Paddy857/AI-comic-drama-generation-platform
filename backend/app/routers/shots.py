@@ -28,7 +28,7 @@ def list_shots(
     return shots
 
 
-@router.post("/", response_model=ShotOut)
+@router.post("", response_model=ShotOut)
 def create_shot(
     data: ShotCreate,
     current_user: User = Depends(get_current_user),

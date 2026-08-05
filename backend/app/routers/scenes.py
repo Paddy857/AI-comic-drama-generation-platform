@@ -13,7 +13,7 @@ from app.schemas import SceneCreate, SceneOut, SceneUpdate
 router = APIRouter(prefix="/scenes", tags=["场景库"])
 
 
-@router.get("/", response_model=List[SceneOut])
+@router.get("", response_model=List[SceneOut])
 def list_scenes(
     project_id: Optional[int] = Query(None),
     keyword: Optional[str] = Query(None),
@@ -30,7 +30,7 @@ def list_scenes(
     return query.order_by(Scene.created_at.desc()).offset(skip).limit(limit).all()
 
 
-@router.post("/", response_model=SceneOut)
+@router.post("", response_model=SceneOut)
 def create_scene(
     data: SceneCreate,
     current_user: User = Depends(get_current_user),

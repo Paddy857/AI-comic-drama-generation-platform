@@ -41,7 +41,7 @@ def get_stats(current_user: User = Depends(get_current_user), db: Session = Depe
     )
 
 
-@router.get("/", response_model=List[ProjectOut])
+@router.get("", response_model=List[ProjectOut])
 def list_projects(
     status: Optional[str] = Query(None),
     keyword: Optional[str] = Query(None),
@@ -59,7 +59,7 @@ def list_projects(
     return projects
 
 
-@router.post("/", response_model=ProjectOut)
+@router.post("", response_model=ProjectOut)
 def create_project(
     data: ProjectCreate,
     current_user: User = Depends(get_current_user),

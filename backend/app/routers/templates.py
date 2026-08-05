@@ -29,7 +29,7 @@ def get_categories():
     return CATEGORIES
 
 
-@router.get("/", response_model=List[dict])
+@router.get("", response_model=List[dict])
 def list_templates(
     category: Optional[str] = Query(None),
     keyword: Optional[str] = Query(None),

@@ -240,7 +240,7 @@ def _run_generation(task_id: int, db_url: str):
         db.close()
 
 
-@router.post("/", response_model=GenerationTaskOut)
+@router.post("", response_model=GenerationTaskOut)
 def create_generation_task(
     data: GenerationTaskCreate,
     background_tasks: BackgroundTasks,

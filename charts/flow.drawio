@@ -1,0 +1,44 @@
+<mxfile host="app.diagrams.net" agent="manual">
+  <diagram id="dataflow" name="图3-2 数据流向图">
+    <mxGraphModel dx="1100" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="400" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="s1" value="用户输入&#xa;选模板+填变量" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eef2ff;strokeColor=#6366f1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="20" y="120" width="130" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s2" value="① 剧本自动合成&#xa;（模板渲染）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ecfeff;strokeColor=#0891b2;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="200" y="120" width="130" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s3" value="② 分镜脚本&#xa;（8~18 镜）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ecfeff;strokeColor=#0891b2;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="380" y="120" width="130" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s4" value="③ 分镜图片批量生成" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#d97706;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="560" y="120" width="130" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s5" value="④ 配音合成&#xa;（情绪语速）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf2f8;strokeColor=#db2777;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="740" y="120" width="130" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s6" value="⑤ Ken Burns 运镜&#xa;+ 字幕烧录" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0fdf4;strokeColor=#16a34a;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="920" y="120" width="130" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s7" value="⑥ 完整漫剧视频&#xa;（concat 拼接）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0fdf4;strokeColor=#16a34a;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="120" width="130" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s8" value="输出：竖屏 MP4&#xa;+ 预览页" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#64748b;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1280" y="120" width="120" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#64748b;" edge="1" parent="1" source="s1" target="s2" />
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#64748b;" edge="1" parent="1" source="s2" target="s3" />
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#64748b;" edge="1" parent="1" source="s3" target="s4" />
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#64748b;" edge="1" parent="1" source="s4" target="s5" />
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#64748b;" edge="1" parent="1" source="s5" target="s6" />
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#64748b;" edge="1" parent="1" source="s6" target="s7" />
+        <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#64748b;" edge="1" parent="1" source="s7" target="s8" />
+        <mxCell id="e8" value="逐镜回传 image_url" style="html=1;dashed=1;strokeColor=#d97706;fontSize=11;" edge="1" parent="1" source="s3" target="s4" />
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

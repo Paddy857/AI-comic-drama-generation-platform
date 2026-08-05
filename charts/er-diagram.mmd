@@ -1,0 +1,84 @@
+erDiagram
+    USERS ||--o{ PROJECTS : "创建"
+    USERS ||--o{ ASSETS : "上传"
+    USERS ||--o{ USER_FAVORITES : "收藏"
+    TEMPLATES ||--o{ USER_FAVORITES : "被收藏"
+    TEMPLATES ||--o{ TEMPLATE_VARIABLES : "包含"
+    TEMPLATES ||--o{ TEMPLATE_SHOTS : "包含"
+    PROJECTS ||--o{ CHARACTERS : "拥有"
+    PROJECTS ||--o{ SCENES : "拥有"
+    PROJECTS ||--o{ SHOTS : "拥有"
+    PROJECTS ||--o{ GENERATION_TASKS : "发起"
+    GENERATION_TASKS ||--o{ GENERATED_SHOTS : "产出"
+    GENERATION_TASKS }o--|| TEMPLATES : "基于"
+
+    USERS {
+        int id PK
+        string username UK
+        string hashed_password
+        string nickname
+        boolean is_vip
+        int favorite_limit
+        int daily_generate_limit
+    }
+    TEMPLATES {
+        int id PK
+        string template_code UK
+        string name
+        string category
+        string description
+        int total_shots
+        boolean is_beginner_friendly
+        json tags
+    }
+    TEMPLATE_VARIABLES {
+        int id PK
+        int template_id FK
+        string var_key
+        string var_label
+        string var_type
+    }
+    TEMPLATE_SHOTS {
+        int id PK
+        int template_id FK
+        int shot_no
+        string shot_type
+        string camera_move
+        string script_content
+        string mood
+    }
+    PROJECTS {
+        int id PK
+        string title
+        string category
+        string style
+        string status
+    }
+    GENERATION_TASKS {
+        int id PK
+        int project_id FK
+        int template_id FK
+        string task_name
+        string task_type
+        string status
+        int progress
+        string current_step
+        string video_url
+    }
+    GENERATED_SHOTS {
+        int id PK
+        int task_id FK
+        int shot_no
+        string image_url
+        string script_content
+        string audio_url
+    }
+    CHARACTERS { int id PK }
+    SCENES { int id PK }
+    SHOTS { int id PK }
+    ASSETS { int id PK }
+    USER_FAVORITES {
+        int id PK
+        int user_id FK
+        int template_id FK
+    }

@@ -1,0 +1,74 @@
+<mxfile host="app.diagrams.net" agent="manual">
+  <diagram id="architecture" name="图3-1 系统架构图">
+    <mxGraphModel dx="900" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- 前端层 -->
+        <mxCell id="fe" value="前端层（Vue 3 + Element Plus）" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;rounded=1;fontSize=13;fontColor=#1e293b;strokeColor=#6366f1;fillColor=#eef2ff;arcSize=6;" vertex="1" parent="1">
+          <mxGeometry x="80" y="40" width="690" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="f1" value="模板中心 ｜ 模板工作台 ｜ AI生成任务 ｜ 角色/场景/素材管理" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fillColor=#ffffff;strokeColor=#c7d2fe;fontSize=12;" vertex="1" parent="fe">
+          <mxGeometry x="10" y="35" width="670" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="f2" value="Vite 开发代理：/api、/uploads → 后端 :8000（生产模式由后端直接托管 dist）" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fillColor=#ffffff;strokeColor=#c7d2fe;fontSize=12;" vertex="1" parent="fe">
+          <mxGeometry x="10" y="75" width="670" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- 后端层 -->
+        <mxCell id="be" value="后端层（FastAPI + SQLAlchemy）" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;rounded=1;fontSize=13;fontColor=#1e293b;strokeColor=#0891b2;fillColor=#ecfeff;arcSize=6;" vertex="1" parent="1">
+          <mxGeometry x="80" y="240" width="690" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="b1" value="API 路由：auth / projects / templates / generate / tts / image-gen / video" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fillColor=#ffffff;strokeColor=#a5f3fc;fontSize=12;" vertex="1" parent="be">
+          <mxGeometry x="10" y="35" width="670" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="b2" value="业务服务：ScriptGenerator / TTS / ImageGen / VideoComposer" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fillColor=#ffffff;strokeColor=#a5f3fc;fontSize=12;" vertex="1" parent="be">
+          <mxGeometry x="10" y="75" width="670" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- AI 服务层 -->
+        <mxCell id="ai" value="AI 服务层（统一抽象接口，可插拔）" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;rounded=1;fontSize=13;fontColor=#1e293b;strokeColor=#d97706;fillColor=#fff7ed;arcSize=6;" vertex="1" parent="1">
+          <mxGeometry x="80" y="440" width="690" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="a1" value="LLM 剧本/分镜（DeepSeek）→ Mock 降级" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fillColor=#ffffff;strokeColor=#fed7aa;fontSize=12;" vertex="1" parent="ai">
+          <mxGeometry x="10" y="35" width="215" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="a2" value="图像生成（Pollinations/Local）→ Mock 降级" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fillColor=#ffffff;strokeColor=#fed7aa;fontSize=12;" vertex="1" parent="ai">
+          <mxGeometry x="237" y="35" width="216" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="a3" value="TTS 配音（say/Silence）→ Mock 降级" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fillColor=#ffffff;strokeColor=#fed7aa;fontSize=12;" vertex="1" parent="ai">
+          <mxGeometry x="465" y="35" width="215" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- 数据层 -->
+        <mxCell id="db" value="数据层" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;rounded=1;fontSize=13;fontColor=#1e293b;strokeColor=#16a34a;fillColor=#f0fdf4;arcSize=6;" vertex="1" parent="1">
+          <mxGeometry x="80" y="640" width="690" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="d1" value="SQLite（可切 MySQL）· 12 张业务表" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fillColor=#ffffff;strokeColor=#bbf7d0;fontSize=12;" vertex="1" parent="db">
+          <mxGeometry x="10" y="35" width="215" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="d2" value="uploads 目录（图片/音频/视频产物）" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fillColor=#ffffff;strokeColor=#bbf7d0;fontSize=12;" vertex="1" parent="db">
+          <mxGeometry x="237" y="35" width="216" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="d3" value="FFmpeg（Ken Burns / 字幕烧录 / concat）" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fillColor=#ffffff;strokeColor=#bbf7d0;fontSize=12;" vertex="1" parent="db">
+          <mxGeometry x="465" y="35" width="215" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- 连接线 -->
+        <mxCell id="e1" value="REST API (JSON)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11;strokeColor=#64748b;" edge="1" parent="1" source="fe" target="be">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;" edge="1" parent="1" source="be" target="ai">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;" edge="1" parent="1" source="be" target="db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;" edge="1" parent="1" source="ai" target="db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

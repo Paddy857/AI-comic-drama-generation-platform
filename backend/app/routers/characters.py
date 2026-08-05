@@ -13,7 +13,7 @@ from app.schemas import CharacterCreate, CharacterOut, CharacterUpdate
 router = APIRouter(prefix="/characters", tags=["角色库"])
 
 
-@router.get("/", response_model=List[CharacterOut])
+@router.get("", response_model=List[CharacterOut])
 def list_characters(
     project_id: Optional[int] = Query(None),
     keyword: Optional[str] = Query(None),
@@ -30,7 +30,7 @@ def list_characters(
     return query.order_by(Character.created_at.desc()).offset(skip).limit(limit).all()
 
 
-@router.post("/", response_model=CharacterOut)
+@router.post("", response_model=CharacterOut)
 def create_character(
     data: CharacterCreate,
     current_user: User = Depends(get_current_user),
