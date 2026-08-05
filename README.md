@@ -15,7 +15,7 @@
 | 📝 **剧本合成** | 模板变量实时注入（`${变量}` 自动替换），AI 一键补全可选变量，五步进度状态机实时可见 |
 | 🎭 **分镜脚本** | 每套模板含 8~18 镜完整脚本（画面 / 台词 / 情绪），逐镜可预览 |
 | 🖼️ **分镜生图** | 真实文生图（Pollinations 免费服务），720×1280 竖屏，失败自动回落本地占位图，进度实时回传 |
-| 🎙️ **自动配音** | macOS 离线中文语音（Tingting 女声 / Sinji 男声交替），情绪控制语速；跨平台自动降级静音音频兜底 |
+| 🎙️ **自动配音** | 免费在线 TTS（微软 Edge-TTS 默认，中文音质好），免 Key 真实合成，男女声自动交替；失败自动降级静音音频兜底 |
 | 🎞️ **视频合成** | 逐镜 Ken Burns 推拉运镜 + 字幕烧录 + 音画严格对齐，concat 拼接输出完整漫剧 |
 | 🚀 **其他创新** | 模板变量驱动批量生产 / 男女声自动交替 / 画风一键切换（古风·赛博·日漫·水彩）/ 每日限额 / VIP 收藏上限 |
 
@@ -23,7 +23,7 @@
 
 **后端**：FastAPI · SQLAlchemy 2.0 · Pydantic v2 · SQLite（可选 MySQL）· FFmpeg · Pillow
 **前端**：Vue 3.5 · Vite · Element Plus · Pinia · Vue Router
-**模型服务**：Pollinations 文生图（免费）· macOS say TTS（离线）· DeepSeek LLM（可选，预留）
+**模型服务**：Edge-TTS 配音 + Pollinations 文生图（免费免 Key）· DeepSeek LLM（可选）
 
 ## 🏗 项目架构
 
@@ -95,50 +95,71 @@ npm run build                           # 生成 frontend/dist
 
 ---
 
-## 🔑 模型 API 配置
+## 🔑 模型 API 配置（选择与配置说明）
 
-所有配置集中在 `backend/.env`（模板见 `backend/.env.example`，复制即用）：
+三大 AI 模块（**配音 TTS / 文生图 / 剧本 LLM**）全部通过 `backend/.env` 环境变量一键切换引擎，**无需改代码**。项目内置**免费免 Key 方案**（开箱即用，只需能访问外网），也预留了**真实厂商 API 配置位**（申请到 Key 后填入环境变量即可接入）。
 
 ```bash
-cd backend && cp .env.example .env
+cd backend && cp .env.example .env   # 默认即免费方案，零配置跑通全流程
 ```
 
-### 三大引擎一览
+### 1. 配音 TTS 引擎（`TTS_ENGINE`）
 
-| 引擎 | 配置项 | 默认 | 说明 |
-|------|--------|------|------|
-| **TTS 配音** | `TTS_ENGINE` | `auto` | `auto`(macOS 语音/跨平台兜底) · `say` · `silence` · `edge` · `aliyun` |
-| **文生图** | `IMAGE_GEN_ENGINE` | `pollinations` | `pollinations`(免费真实) · `local`(离线) · `mock` |
-| **剧本 LLM** | `LLM_API_KEY` 等 | 空 | 模板驱动无需 LLM 即可跑通；填入后启用 AI 剧本/变量补全 |
-
-### 详细配置示例
+| 引擎 | `TTS_ENGINE` | Key | 说明 |
+|------|-------------|-----|------|
+| **微软 Edge-TTS**（默认） | `edge` | 免 Key | 免费高质量中文，需外网；失败自动降级静音音频，保证出片 |
+| Pollinations 在线 TTS | `pollinations` | 免 Key | 备选；公共端点可能受限（404），可用时免 Key |
+| 静音音频（兜底） | `silence` | — | 无配音但能出片 |
+| macOS 本地语音 | `say` | — | 仅本机演示 |
+| 阿里云 / 火山 CosyVoice 等（预留） | `aliyun` / `cosyvoice` | 需申请 | 见下文「真实厂商接入」 |
 
 ```ini
-# ① 文生图：免费真实出图（默认，需外网）
-IMAGE_GEN_ENGINE=pollinations
-IMAGE_CONCURRENCY=1        # 免费服务建议 1，稳定优先
-
-# 换用硅基流动·可图（更快、更稳，注册 https://siliconflow.cn 获取 Key）
-# IMAGE_GEN_ENGINE=kolors
-# KOLORS_API_KEY=sk-xxxx
-
-# 换用本地离线出图（评测/无网环境）
-# IMAGE_GEN_ENGINE=local
-
-# ② 配音：macOS 用系统语音；Windows/Linux 自动静音兜底保证出片
-TTS_ENGINE=auto
-
-# 接入阿里云 TTS 提升音质（需云账号密钥）
-# TTS_ENGINE=aliyun
-# ALIYUN_TTS_ACCESS_KEY_ID=xxxx
-# ALIYUN_TTS_ACCESS_KEY_SECRET=xxxx
-# ALIYUN_TTS_APPKEY=xxxx
-
-# ③ 剧本大模型（DeepSeek，可选）
-# LLM_API_KEY=sk-xxxx
-# LLM_BASE_URL=https://api.deepseek.com
-# LLM_MODEL=deepseek-chat
+TTS_ENGINE=edge                  # 微软 Edge-TTS（默认，免费）
+# TTS_ENGINE=pollinations        # 备选：Pollinations 在线 TTS（端点可能受限）
+POLLINATIONS_TTS_BASE_URL=https://text.pollinations.ai
+POLLINATIONS_TTS_TIMEOUT=90      # 单次合成超时（秒）
 ```
+
+### 2. 文生图引擎（`IMAGE_GEN_ENGINE`）
+
+| 引擎 | `IMAGE_GEN_ENGINE` | Key | 说明 |
+|------|-------------------|-----|------|
+| **Pollinations 文生图**（默认） | `pollinations` | 免 Key | 免费真实出图，需外网；失败自动回落本地占位图 |
+| 硅基流动·可图 Kolors（推荐真实方案） | `kolors` | 需申请 | 更快更稳，OpenAI 兼容 |
+| 智谱 CogView（可选） | `cogview` | 需申请 | 需自行接入实现 |
+| 本地离线（评测/无网） | `local` | — | 纯占位图 |
+
+```ini
+IMAGE_GEN_ENGINE=pollinations    # 免费真实文生图（默认）
+IMAGE_CONCURRENCY=1              # 免费服务建议 1，稳定优先
+# IMAGE_GEN_ENGINE=kolors        # 换用硅基流动·可图
+# KOLORS_API_KEY=sk-xxxx
+```
+
+### 3. 剧本大模型 LLM（可选，`LLM_API_KEY` 等）
+
+模板驱动模式**无需 LLM** 即可跑通全流程；填入 Key 后启用 AI 剧本改写与变量智能补全（OpenAI 兼容接口）：
+
+```ini
+# 方式一：DeepSeek 官方（https://platform.deepseek.com 申请 Key）
+LLM_API_KEY=sk-xxxx
+LLM_BASE_URL=https://api.deepseek.com/v1
+LLM_MODEL=deepseek-chat
+
+# 方式二：硅基流动（https://siliconflow.cn 申请 Key，可用 DeepSeek-V3 等）
+# LLM_BASE_URL=https://api.siliconflow.cn/v1
+# LLM_MODEL=deepseek-ai/DeepSeek-V3
+```
+
+### 4. 真实厂商接入（最终成品推荐方案）
+
+最终交付建议申请以下 API 并填入环境变量，获得更好的音画质量（各引擎实现类按下方说明在 `backend/app/services/` 下注册即可，上层流程零改动）：
+
+| 模块 | 推荐厂商 | 申请入口 | 待接入实现 |
+|------|---------|---------|-----------|
+| 配音 | 火山引擎 CosyVoice / 阿里云智能语音 | [volcengine.com](https://www.volcengine.com) / [aliyun.com](https://www.aliyun.com) | `services/tts/cosyvoice.py`、`services/tts/aliyun.py` |
+| 文生图 | 硅基流动·可图 Kolors | [siliconflow.cn](https://siliconflow.cn) | `services/image_gen/kolors.py`（已预留接口） |
+| 剧本 | DeepSeek / 硅基流动 | [platform.deepseek.com](https://platform.deepseek.com) | 已内置（配置 Key 即用） |
 
 ---
 
@@ -155,8 +176,8 @@ AIGC/
 │   │   ├── schemas/              # Pydantic 模型
 │   │   ├── routers/              # API 路由（templates/generate/tts/video/...）
 │   │   └── services/
-│   │       ├── image_gen/        # 文生图：pollinations(真实) / local(离线) / mock
-│   │       ├── tts/              # 配音：say(macOS) / silence(兜底) / edge(预留)
+│   │       ├── image_gen/        # 文生图：pollinations(免费真实) / local(离线) / mock
+│   │       ├── tts/              # 配音：edge(免费在线) / pollinations(备选) / silence(兜底) / say(macOS)
 │   │       └── video_composer.py # Ken Burns 运镜 + 字幕烧录 + 拼接
 │   ├── init_db.py                # 建库建表 + 10 套模板种子数据
 │   ├── tests/                    # 自动化测试（时长对齐/运镜/字幕/异常）
@@ -193,7 +214,7 @@ cd backend && ./venv/bin/python tests/test_0*.py
 免费文生图（Pollinations）单张约 20~45 秒，串行保证稳定。接入付费引擎（硅基流动等）可降到 3~5 秒/张。
 
 **Q2：Windows/Linux 上配音没声音？**
-默认 `TTS_ENGINE=auto`：非 macOS 自动使用静音音频兜底（视频可正常出片）。想要真实配音：接入阿里云/火山 TTS 并填入密钥，或配置代理使用 Edge-TTS。
+默认 `TTS_ENGINE=edge`：微软在线 TTS，任意平台都有真实中文配音。若离线或接口失败，自动降级静音音频兜底（视频仍可出片）。需要更高音质可接入火山/阿里云厂商 API。
 
 **Q3：图片生成失败？**
 Pollinations 为免费公共服，偶发限流。已内置 3 次重试 + 本地占位图回落，流水线不中断。离线环境可将 `IMAGE_GEN_ENGINE` 改为 `local`。

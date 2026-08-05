@@ -1,66 +1,91 @@
-"""EdgeTTSService：微软 Edge-TTS（免费）接入预留实现。
+"""EdgeTTSService：基于微软 Edge-TTS 的免费高质量中文 TTS 实现。
 
-接入步骤（后续有需要时启用）：
-1. 安装依赖：pip install edge-tts
-2. 将 backend/.env 中的 TTS_ENGINE 改为 edge
-3. 可选：在下方 VOICE_MAP 中补充 edge-tts 音色 ID（如 zh-CN-YunxiNeural 少年 / zh-CN-XiaoxiaoNeural 女声）
-4. 真实调用时，uncomment 下方被注释的 edge_tts 逻辑即可
+- 免费、无需 Key，中文音色丰富（Xiaoxiao 温柔女声 / Yunxi 少年男声等）
+- 依赖：pip install edge-tts（按需安装，未写入 requirements.txt）
+- 情绪语速：通过 rate 参数（+10% / -15%）映射情绪系数
+- 网络失败/异常时降级为静音音频兜底，保证全流程可出片
 
-edge-tts 音色 ID 参考：
-- zh-CN-XiaoxiaoNeural  女声 温柔（推荐女角）
-- zh-CN-YunxiNeural    男声 少年音（推荐男角）
-- zh-CN-YunyangNeural  男声 新闻/沉稳（推荐反派/旁白）
-- zh-CN-XiaoyiNeural   女声 活泼
+接入方式：backend/.env 配置 TTS_ENGINE=edge。
 """
 
 import asyncio
+import concurrent.futures
+import hashlib
+import logging
 import os
+import subprocess
 
 from app.core.config import settings
-from app.schemas.audio import AudioResult, WordTimestamp
-from app.services.tts.base import BaseTTSService
+from app.schemas.audio import AudioResult
+from app.services.tts.base import BaseTTSService, EMOTION_SPEED_FACTORS
+
+logger = logging.getLogger("tts")
 
 VOICE_MAP = {
-    "male_young": "zh-CN-YunxiNeural",
-    "male_steady": "zh-CN-YunyangNeural",
-    "female_gentle": "zh-CN-XiaoxiaoNeural",
-    "female_lively": "zh-CN-XiaoyiNeural",
+    "male_young": "zh-CN-YunxiNeural",        # 少年音
+    "male_steady": "zh-CN-YunyangNeural",     # 沉稳男声
+    "female_gentle": "zh-CN-XiaoxiaoNeural",  # 温柔女声
+    "female_lively": "zh-CN-XiaoyiNeural",    # 活泼女声
 }
 
 
+def _run_async(coro):
+    """安全执行 async 协程：无事件循环时直接 run，已有事件循环时移到新线程隔离"""
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(coro)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+        return ex.submit(asyncio.run, coro).result()
+
+
 class EdgeTTSService(BaseTTSService):
-    """基于微软 Edge-TTS 的实现（免费、无 Key）。
-
-    注意：Edge-TTS 为 async API，此处用 asyncio.run 包装成同步接口以符合抽象基类签名。
-    """
-
     name = "edge"
 
     def generate_audio(self, text: str, voice_id: str, emotion: str) -> AudioResult:
-        # import edge_tts  # pip install edge-tts
+        text = (text or "").strip()
+        if not text:
+            raise ValueError("合成文本为空")
+        try:
+            import edge_tts  # pip install edge-tts
+        except ImportError:
+            raise RuntimeError("TTS_ENGINE=edge 需要安装依赖：pip install edge-tts（见 README 模型 API 配置）")
+
         edge_voice = VOICE_MAP.get(voice_id, VOICE_MAP["female_gentle"])
+        factor = EMOTION_SPEED_FACTORS.get(emotion, 1.0)
+        rate = f"{(factor - 1.0) * 100:+.0f}%"  # 愤怒 +20% 更快 / 悲伤 -15% 更慢
 
         os.makedirs(settings.tts_upload_dir, exist_ok=True)
-        audio_path = os.path.join(settings.tts_upload_dir, f"{voice_id}.mp3")
+        digest = hashlib.md5(f"{text}|{voice_id}|{emotion}".encode()).hexdigest()[:12]
+        rel_dir = os.path.relpath(settings.tts_upload_dir, settings.upload_dir)
+        filename = f"{digest}.mp3"
+        audio_path = os.path.join(settings.tts_upload_dir, filename)
 
-        async def _synth() -> list:
-            # communicate = edge_tts.Communicate(text, edge_voice)
-            # await communicate.save(audio_path)
-            # # 逐字时间戳（edge-tts 通过 stream() 逐字返回）
-            # timestamps = []
-            # async for chunk in communicate.stream():
-            #     if chunk["type"] == "WordBoundary":
-            #         timestamps.append(WordTimestamp(
-            #             word=chunk["text"], start=chunk["offset"] / 1e7, end=(chunk["offset"] + chunk["duration"]) / 1e7,
-            #         ))
-            return []  # TODO: 接入后替换
+        try:
+            _run_async(self._synth(edge_tts, text, edge_voice, rate, audio_path))
+        except Exception as e:
+            logger.warning("Edge-TTS 合成失败(%s)，降级为静音音频", e)
+            from app.services.tts.silence import SilenceTTSService
+            return SilenceTTSService().generate_audio(text, voice_id, emotion)
 
-        timestamps = asyncio.run(_synth())
         return AudioResult(
-            audio_url=f"/{audio_path}",
-            duration=0.0,  # TODO: 用 pydub/ffprobe 读取真实时长
-            timestamp_alignment=timestamps,
+            audio_url=f"/uploads/{rel_dir}/{filename}".replace(os.sep, "/"),
+            duration=self._probe_duration(audio_path),
             text=text,
             voice_id=voice_id,
             emotion=emotion,
         )
+
+    @staticmethod
+    async def _synth(edge_tts, text: str, voice: str, rate: str, path: str) -> None:
+        communicate = edge_tts.Communicate(text, voice, rate=rate)
+        await communicate.save(path)
+
+    @staticmethod
+    def _probe_duration(path: str) -> float:
+        out = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+             "-of", "csv=p=0", path],
+            capture_output=True, text=True, timeout=30,
+        ).stdout.strip()
+        return round(float(out), 3) if out else 0.0

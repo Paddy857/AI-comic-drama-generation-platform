@@ -21,10 +21,12 @@ class Settings(BaseSettings):
     llm_api_key: str = ""
     llm_model: str = "deepseek-chat"
 
-    tts_engine: str = "auto"
+    tts_engine: str = "edge"
     tts_upload_dir: str = "uploads/tts"
+    pollinations_tts_base_url: str = "https://text.pollinations.ai"
+    pollinations_tts_timeout: int = 90
 
-    image_gen_engine: str = "mock"
+    image_gen_engine: str = "pollinations"
     image_gen_upload_dir: str = "uploads/image_gen"
     pollinations_base_url: str = "https://image.pollinations.ai"
     pollinations_timeout: int = 180
