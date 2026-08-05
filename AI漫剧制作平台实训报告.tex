@@ -205,24 +205,11 @@ M4-5 & 输出校验 & 输出 H.264 + AAC 标准 mp4，可在线播放\\
 
 \subsection{用例图（Use Case Diagram）}
 
-系统核心用例关系如图 \ref{fig:usecase} 所示（文字版示意，正式报告以 draw.io/Excalidraw 导出 PNG 嵌入）：
+系统核心用例关系如图 \ref{fig:usecase} 所示：普通用户与管理员围绕模板、生成任务与素材展开交互；剧本生成、分镜生成、图片生成、配音生成、视频合成五个核心用例由系统统一编排，"一键生成"用例内部依次触发图片、配音与视频合成三个子用例。
 
 \begin{figure}[htbp]
 \centering
-\begin{minipage}{0.92\textwidth}
-\begin{verbatim}
-                ┌─────────────────────────────────────────────┐
-                │                 漫剧制作平台                 │
-                └─────────────────────────────────────────────┘
-   ┌──────────────┬─────────────────┬──────────────────┬──────────────┐
-   │              │                 │                  │              │
- 剧本生成用例   分镜生成用例     图片生成用例       配音生成用例    视频合成用例
- (M1)          (M1)            (M2)              (M3)           (M4)
-   │              │                 │                  │              │
- 填写模板变量   生成分镜结构     提交批量绘图        选择音色      上传图片/音频
- 调用LLM/Mock  渲染变量脚本     轮询任务进度        输入台词      设置字幕与运镜
-\end{verbatim}
-\end{minipage}
+\includegraphics[width=0.62\textwidth]{assets/usecase.png}
 \caption{系统用例图}\label{fig:usecase}
 \end{figure}
 
@@ -268,32 +255,11 @@ P2（可选） & 角色一致性、情绪曲线预设、收藏模板、AI 变量
 \chapter{系统架构设计}
 \section{架构概述}
 
-系统采用分层架构，自上而下分为四层，如图 \ref{fig:arch} 所示：
+系统采用分层架构，自上而下分为前端层、后端层、AI 服务层与数据层四层，整体架构如图 \ref{fig:arch} 所示：
 
 \begin{figure}[htbp]
 \centering
-\begin{minipage}{0.92\textwidth}
-\begin{verbatim}
-┌─────────────────────────────────────────────────────────────┐
-│ 前端层（Vue 3 + Element Plus）                               │
-│  模板中心 | 工作台 | 生成任务 | 角色/场景管理 | 素材管理      │
-│  Vite 开发代理 /api、/uploads → 后端                        │
-├─────────────────────────────────────────────────────────────┤
-│ 后端层（FastAPI + SQLAlchemy）                               │
-│  API 路由（auth/projects/templates/generate/…/video）        │
-│  业务服务（ScriptGenerator / TTS / ImageGen / VideoComposer）│
-│  异步任务编排（后台线程 + 任务状态机）                        │
-├─────────────────────────────────────────────────────────────┤
-│ AI 服务层（统一抽象接口，可插拔）                             │
-│  LLM（DeepSeek，分镜生成）→ Mock 降级                        │
-│  图像生成（可图/可灵）→ Mock 降级                            │
-│  TTS（Edge-TTS）→ Mock 降级                                 │
-├─────────────────────────────────────────────────────────────┤
-│ 数据层                                                      │
-│  SQLite（可切 MySQL）| 上传目录 | FFmpeg                     │
-└─────────────────────────────────────────────────────────────┘
-\end{verbatim}
-\end{minipage}
+\includegraphics[width=0.8\textwidth]{assets/architecture.png}
 \caption{系统整体架构图}\label{fig:arch}
 \end{figure}
 
@@ -327,43 +293,19 @@ P2（可选） & 角色一致性、情绪曲线预设、收藏模板、AI 变量
 
 \section{数据流向}
 
-\textbf{核心业务流程数据流向}（模板驱动生成，如图 \ref{fig:flow}）：
+\textbf{核心业务流程数据流向}（模板驱动生成，如图 \ref{fig:flow}）：用户输入模板变量 → \texttt{generate} 路由创建 GenerationTask（pending）→ 后台线程注入变量渲染模板脚本（M1）→ 按模板固定分镜生成 GeneratedShot（M1）→ 逐镜提交图片生成任务，BatchImageService 并发调度（M2）→ 逐镜生成配音音频（M3）→ VideoComposer 逐镜合成视频片段（M4）→ 任务置为 done，前端轮询到 100\% 展示成品。
 
 \begin{figure}[htbp]
 \centering
-\begin{minipage}{0.92\textwidth}
-\begin{verbatim}
-用户输入模板变量 → generate 路由创建 GenerationTask（pending）
-  → 后台线程：注入变量渲染模板脚本（M1）
-  → 按模板固定分镜生成 GeneratedShot（M1）
-  → 逐镜提交图片生成任务，BatchImageService 并发调度（M2）
-  → 逐镜生成配音音频（M3）
-  → VideoComposer 逐镜合成视频片段（M4）
-  → 任务置为 done，前端轮询到 100% 展示成品
-\end{verbatim}
-\end{minipage}
+\includegraphics[width=\textwidth]{assets/flow.png}
 \caption{核心业务流程数据流向图}\label{fig:flow}
 \end{figure}
 
-\textbf{关键流程时序图（"AI 图片批量生成"完整流程）}，如图 \ref{fig:seq}：
+\textbf{关键流程时序图（"AI 图片批量生成"完整流程）}，如图 \ref{fig:seq}：前端工作台提交生成任务，后台线程通过 BatchImageService 将各镜头并发提交至图像生成服务，逐镜回调更新任务进度，前端轮询直至 status=done、progress=100\%。
 
 \begin{figure}[htbp]
 \centering
-\begin{minipage}{0.92\textwidth}
-\begin{verbatim}
-前端工作台           generate路由      BatchImageService      MockImageGenerator
-    │   POST /api/generate    │                    │                    │
-    │───────────────────────►│ 创建任务(pending)   │                    │
-    │◄───────────────────────│ task_id            │                    │
-    │   GET /tasks/{id}(轮询) │                    │                    │
-    │───────────────────────►│ 后台线程: 提交6镜   │                    │
-    │                        │───────────────────►│ ThreadPool提交任务  │
-    │                        │                    │──────► 模拟生成中    │
-    │                        │◄───────────────────│ 每镜完成回调更新     │
-    │◄───────────────────────│ progress/completed │                    │
-    │    status=done 100%    │                    │                    │
-\end{verbatim}
-\end{minipage}
+\includegraphics[width=0.95\textwidth]{assets/sequence.png}
 \caption{AI 图片批量生成时序图}\label{fig:seq}
 \end{figure}
 
@@ -429,20 +371,11 @@ IDE & VS Code / Trae IDE\\
 \chapter{数据库表设计}
 \section{ER 图（实体关系）}
 
-文字版 ER 图如图 \ref{fig:er}（正式报告以 draw.io/Excalidraw 导出 PNG 嵌入，标注 1:1 / 1:N / M:N 基数）：
+系统共 12 张业务表，实体关系如图 \ref{fig:er} 所示：
 
 \begin{figure}[htbp]
 \centering
-\begin{minipage}{0.92\textwidth}
-\begin{verbatim}
-User (1) ────────< (N) Project (1) ────> (N) GenerationTask (1) ──> (N) GeneratedShot
- User ──< Character      Project ──< Scene       Project ──< Shot
- Template (1) ──< (N) TemplateVariable
- Template (1) ──< (N) TemplateShot
- Template (1) ──< (N) UserFavorite   User (1) ──< (N) UserFavorite
- User (1) ──< (N) Asset
-\end{verbatim}
-\end{minipage}
+\includegraphics[width=0.78\textwidth]{assets/er-diagram.png}
 \caption{数据库 ER 图}\label{fig:er}
 \end{figure}
 
@@ -917,26 +850,43 @@ TC-12 & 集成 & 模板一键生成任务 & 状态机走完 5 步 done & 全部�
 \chapter{成果展示与截图}
 \section{功能演示截图}
 
-\begin{longtable}{p{2.4cm}p{4cm}p{8.6cm}}
-\caption{功能演示截图清单}\label{tab:shots}\\
-\toprule
-图编号 & 标题 & 截图内容\\
-\midrule
-\endfirsthead
-\toprule
-图编号 & 标题 & 截图内容\\
-\midrule
-\endhead
-图 1-1 & 平台首页 & 首页导航、模板推荐与一键生成入口\\
-图 1-2 & 模板中心 & 模板列表（分类筛选、新手友好标记）\\
-图 1-3 & 模板工作台 & 必填变量表单 + 分镜结构预览 + 情绪曲线\\
-图 2-1 & 生成任务进度 & 五步状态机进度弹窗（M1--M4 集成）\\
-图 3-1 & 图片批量生成状态 & M2 批量任务进度（6 镜并发）\\
-图 4-1 & 视频合成产物 & M4 输出 mp4 视频画面（含底部字幕）\\
-\bottomrule
-\end{longtable}
+以下均为项目实际运行画面截图（图 \ref{fig:shot-home} ~ 图 \ref{fig:shot-video}），覆盖从首页到成品的完整流程：
 
-\textbf{说明}：以上各图编号与标题已规划，正式提交时以实际运行画面截图替换（按要求不得使用设计稿替代）。
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.88\textwidth]{assets/shot-home.png}
+\caption{平台首页（模板推荐与一键生成入口）}\label{fig:shot-home}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.88\textwidth]{assets/shot-template.png}
+\caption{模板中心（分类筛选与新手友好标记）}\label{fig:shot-template}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.88\textwidth]{assets/shot-workspace.png}
+\caption{模板工作台（必填变量表单与分镜预览）}\label{fig:shot-workspace}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.88\textwidth]{assets/shot-progress.png}
+\caption{生成任务五步进度（状态机实时回传）}\label{fig:shot-progress}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.88\textwidth]{assets/shot-images.png}
+\caption{分镜图片批量生成结果（6 镜并发）}\label{fig:shot-images}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.88\textwidth]{assets/shot-video.png}
+\caption{最终漫剧视频成品（含底部字幕）}\label{fig:shot-video}
+\end{figure}
 
 \section{效果展示}
 
