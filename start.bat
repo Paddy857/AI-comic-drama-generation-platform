@@ -11,6 +11,10 @@ cd /d %~dp0
 
 echo ==^> [1/3] 初始化后端环境
 cd backend
+if not exist .env (
+  copy .env.example .env >nul
+  echo     已从 .env.example 生成 .env
+)
 if not exist venv (
   python -m venv venv
 )

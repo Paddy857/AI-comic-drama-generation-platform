@@ -35,3 +35,6 @@ pages/
 charts/
 assets/
 backend/app/schemas/__init__2.py
+
+# 提交资料源码整理目录（本地生成，不提交）
+项目源码/

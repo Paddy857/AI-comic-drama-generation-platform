@@ -12,6 +12,10 @@ ROOT="$(cd "$(dirname "$0")" && pwd)"
 
 echo "==> [1/3] 初始化后端环境"
 cd "$ROOT/backend"
+if [ ! -f .env ]; then
+  cp .env.example .env
+  echo "    已从 .env.example 生成 .env"
+fi
 if [ ! -d venv ]; then
   python3 -m venv venv
 fi
